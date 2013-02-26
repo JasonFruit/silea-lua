@@ -1,3 +1,5 @@
+#!/usr/bin/env lua
+
 local parser = require("parse-silea");
 local evaluator = require("evaluator");
 
