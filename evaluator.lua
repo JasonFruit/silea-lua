@@ -6,6 +6,7 @@ local M = {};
 do
 
    local eval;
+   local functions = require("functions")
    
    -- the environment manager for the evaluator
    local environ = require("environ");
@@ -15,56 +16,54 @@ do
    end;
    
    -- evaluate the AST of a fiat statement
-   local function eval_fiat(ast)
+   local function eval_fiat(ast, env)
 
       -- TODO: remove for speed?
       assert(ast["name"] == "fiat",
              "Not a fiat node.");
 
-      environ.current().define(ident_name(ast[1]));
+      env.define(ident_name(ast[1]));
 
    end;
 
    -- evaluate the AST of a let statement
-   local function eval_let(ast)
+   local function eval_let(ast, env)
 
       -- TODO: remove for speed?
       assert(ast["name"] == "let",
              "Not a let node.");
 
-      environ.current().define(ident_name(ast[1]),
-                               eval(ast[2]));
+      env.define(ident_name(ast[1]),
+                 eval(ast[2], env));
 
    end;
 
-   local function eval_scope(ast)
+   local function eval_scope(ast, env)
 
-      environ.current().add_new();
+      env = env.temp_new();
 
       for i, v in ipairs(ast) do
          if i > 1 then
-            eval(v);
+            eval(v, env);
          end;
-      end;
+      end;      
 
-      environ.current().close();
-      
    end;
 
    -- evaluate the AST of a set statement
-   local function eval_set(ast)
+   local function eval_set(ast, env)
 
       -- TODO: remove for speed?
       assert(ast["name"] == "set",
              "Not a set node.");
 
-      environ.current().set(ident_name(ast[1]),
-                            eval(ast[2]));
+      env.set(ident_name(ast[1]),
+              eval(ast[2], env));
 
    end;
 
    -- evaluate the AST of an integer expression
-   local function eval_int(ast)
+   local function eval_int(ast, env)
 
       -- TODO: remove for speed?
       assert(ast["name"] == "int",
@@ -75,7 +74,7 @@ do
    end;
 
    -- evaluate the AST of a real numeric expression
-   local function eval_real(ast)
+   local function eval_real(ast, env)
 
       -- TODO: remove for speed?
       assert(ast["name"] == "real",
@@ -86,7 +85,7 @@ do
    end;
 
    -- evaluate the AST of a string expression
-   local function eval_string(ast)
+   local function eval_string(ast, env)
 
       -- TODO: remove for speed?
       assert(ast["name"] == "string",
@@ -97,25 +96,39 @@ do
       
    end;
 
+   -- evaluate the AST of a function expression
+   local function eval_function(ast, env)
+      local args = {};
+      
+      for i, v in ipairs(ast[1]) do
+         args[i] = v.value;
+      end;
+
+      return functions.user_defined(env,
+                                    args,
+                                    ast[2],
+                                    eval);
+   end;
+
    -- evaluate the AST for a statement
-   local function eval_statement(ast)
+   local function eval_statement(ast, env)
 
       -- TODO: remove for speed?
       assert(ast["name"] == "statement",
              "Not a statement.");
 
       -- evaluate the statement's content but do not return anything
-      eval(ast[2]);
+      eval(ast[2], env);
 
    end;
 
-   local function eval_call(ast)
+   local function eval_call(ast, env)
 
-      local f = eval(ast[1]);
+      local f = eval(ast[1], env);
       local args = {};
 
       for i, arg_ast in ipairs(ast[2]) do
-         args[i] = eval(arg_ast);
+         args[i] = eval(arg_ast, env);
       end;
 
       return f(unpack(args));
@@ -123,42 +136,52 @@ do
    end;
 
    -- evaluate the AST for an identifier
-   local function eval_ident(ast)
+   local function eval_ident(ast, env)
       
       -- TODO: remove for speed?
       assert(ast["name"] == "ident",
              "Not an ident.");
 
       -- return the value associated with the name
-      return environ.current().find(ast.value);
+      return env.find(ast.value);
 
    end;
 
+   local function eval_return(ast, env)
+
+      error(eval(ast[1], env), 0);
+      
+   end;
+
    -- evaluate any sub-program AST node
-   eval = function(ast)
+   eval = function(ast, env)
 
       local name = ast["name"];
       
       if name == "scope" then
-         return eval_scope(ast);
+         return eval_scope(ast, env);
       elseif name == "statement" then
-         return eval_statement(ast);
+         return eval_statement(ast, env);
       elseif name == "call" then
-         return eval_call(ast);
+         return eval_call(ast, env);
       elseif name == "ident" then
-         return eval_ident(ast);
+         return eval_ident(ast, env);
       elseif name == "fiat" then
-         return eval_fiat(ast);
+         return eval_fiat(ast, env);
       elseif name == "let" then
-         return eval_let(ast);
+         return eval_let(ast, env);
       elseif name == "set" then
-         return eval_set(ast);
+         return eval_set(ast, env);
       elseif name == "int" then
-         return eval_int(ast);
+         return eval_int(ast, env);
       elseif name == "real" then
-         return eval_real(ast);
+         return eval_real(ast, env);
       elseif name == "string" then
-         return eval_string(ast);
+         return eval_string(ast, env);
+      elseif name == "function" then
+         return eval_function(ast, env)
+      elseif name == "return" then
+         return eval_return(ast, env)
       else
          error("Node type '" .. name .. "' not yet implemented.");
       end;
@@ -175,7 +198,7 @@ do
          -- ignore the name and the first numbered node, which
          -- contains the text of the program
          if (k ~= "name") and (k ~= 1) then
-            eval(statement);
+            eval(statement, environ.current());
          end;
       end;
       

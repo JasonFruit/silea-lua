@@ -3,16 +3,28 @@
 local parser = require("parse-silea");
 local evaluator = require("evaluator");
 
-local code = [[fiat lux
-               {
-                  let some-num 3.33
-                  let another 4
-                  {
-                     set lux "a string"
-                     print(add(some-num another))
-                  }
-               }
-               print(lux)]];
+local code = [[
+
+fiat f
+
+{
+    let i 1
+
+    # f encloses i
+    set f function(n) {
+        set i add(i 1)
+        return add(n i)
+    }
+}
+
+print(f(1))
+print(f(1))
+print(f(1))
+print(f(1))
+print(f(1))
+print(f(1))
+
+]];
 
 local ast = parser.parse(code)
 

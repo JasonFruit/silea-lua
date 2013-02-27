@@ -1,3 +1,6 @@
+-- Implements an environment manager for Silea programs
+
+-- the module table
 local M = {};
 
 do
@@ -43,11 +46,11 @@ do
                          end;
                       end,
                       ["define"] = function(name, value)
-                         assert(not current["name"],
+                         assert(not env[name],
                                 "Name '" .. name .. "' is already defined in the current scope.");
-                         
+
                          value = value or values.nothing;
-                         current[name] = value;
+                         env[name] = value;
                       end,
                       ["set"] = function(name, value)
                          local val, e = env.find(name);
