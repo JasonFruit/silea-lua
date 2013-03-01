@@ -6,10 +6,12 @@ local M = {};
 do
 
    local eval;
-   local functions = require("functions")
    
    -- the environment manager for the evaluator
    local environ = require("environ");
+
+   -- the definitions for primitive and user-defined functions
+   local functions = require("functions");
 
    local function ident_name(ast)
       return ast.value;
@@ -96,18 +98,27 @@ do
       
    end;
 
+   local function eval_bool(ast, env)
+      if ast.value == "true" then
+         return true;
+      else
+         return false;
+      end;
+   end;
+
    -- evaluate the AST of a function expression
    local function eval_function(ast, env)
       local args = {};
       
-      for i, v in ipairs(ast[1]) do
+      for i, v in ipairs(ast[2]) do
          args[i] = v.value;
       end;
 
       return functions.user_defined(env,
                                     args,
-                                    ast[2],
-                                    eval);
+                                    ast[3],
+                                    eval,
+                                    ast[1]);
    end;
 
    -- evaluate the AST for a statement
@@ -153,6 +164,75 @@ do
       
    end;
 
+   local function eval_array(ast, env)
+
+      local out = {};
+
+      setmetatable(out, {__tostring = function()
+                            return "[" .. table.concat(out, " ") .. "]";
+      end});
+
+      for i, v in ipairs(ast) do
+         out[i] = eval(v, env);
+      end;
+
+      return out;
+
+   end;
+
+   local function eval_attrib(ast, env)
+      return ident_name(ast[1]), eval(ast[2], env);
+   end;
+   
+   local function eval_container(ast, env)
+      local out = {};
+
+      setmetatable(out,
+                   {__tostring = function(t)
+                       local s = "<";
+                       for k, v in pairs(t) do
+                          s = s .. " " .. tostring(k) .. ": " .. tostring(v);
+                       end;
+                       return s .. " >";
+                   end;});                       
+      
+      for i, v in ipairs(ast) do
+         local key, val = eval_attrib(v, env);
+         out[key] = val;
+      end;
+
+      return out;
+      
+   end;
+
+   local function eval_for(ast, env)
+      env = env.temp_new();
+
+      local var = ident_name(ast[1]);
+      local arr = eval(ast[2], env);
+
+      env.define(var);
+      
+      for i, v in ipairs(arr) do
+         env.set(var, v);
+         eval_scope(ast[3], env);
+      end;
+      
+   end;
+
+   local function eval_if(ast, env)
+      local cond = eval(ast[1], env);
+
+      -- the only false values in Silea are false and nothing
+      if (cond ~= false) and (cond ~= env.find("nothing")) then
+         eval(ast[2], env);
+      else
+         if #ast > 2 then
+            eval(ast[3], env);
+         end;
+      end;
+   end;
+
    -- evaluate any sub-program AST node
    eval = function(ast, env)
 
@@ -178,10 +258,20 @@ do
          return eval_real(ast, env);
       elseif name == "string" then
          return eval_string(ast, env);
+      elseif name == "bool" then
+         return eval_bool(ast, env);
       elseif name == "function" then
-         return eval_function(ast, env)
+         return eval_function(ast, env);
+      elseif name == "array" then
+         return eval_array(ast, env);
+      elseif name == "container" then
+         return eval_container(ast, env);
       elseif name == "return" then
-         return eval_return(ast, env)
+         return eval_return(ast, env);
+      elseif name == "for" then
+         return eval_for(ast, env);
+      elseif name == "if" then
+         return eval_if(ast, env);
       else
          error("Node type '" .. name .. "' not yet implemented.");
       end;

@@ -7,11 +7,14 @@ do
       setmetatable(out,
                    {__call = function(t, ...)
                        f(unpack(arg));
-                   end;});
+                   end,
+                    __tostring = function()
+                       return "(primitive function)";
+                    end});
       return out;
    end;
 
-   M.user_defined = function(env, args, ast, eval)
+   M.user_defined = function(env, args, ast, eval, source)
       local out = {};
       out.env = env;
       out.ast = ast;
@@ -36,8 +39,11 @@ do
                           return retval;
                        end;
                        
-                   end;});
-                    
+                   end,
+                    __tostring = function(t)
+                       return "user-defined " .. source;
+                    end});
+      
       return out;
 
    end;

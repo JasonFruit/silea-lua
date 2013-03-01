@@ -5,25 +5,10 @@ local evaluator = require("evaluator");
 
 local code = [[
 
-fiat f
-
-{
-    let i 1
-
-    # f encloses i
-    set f function(n) {
-        set i add(i 1)
-        return add(n i)
-    }
+let struct function(a b c) {
+    return <a: a b: b c: c>
 }
-
-print(f(1))
-print(f(1))
-print(f(1))
-print(f(1))
-print(f(1))
-print(f(1))
-
+print(struct(3 5 "dog"))
 ]];
 
 local ast = parser.parse(code)

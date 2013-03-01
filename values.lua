@@ -2,29 +2,24 @@ local M = {};
 
 do
 
-   local function primitive_func(f)
-      local out = {};
-      setmetatable(out,
-                   {__call = function(t, ...)
-                       f(unpack(arg));
-                   end;});
-      return out;
-   end;
+   local functions = require("functions");
    
-   -- TODO: is there a better value for nothing?
-   M["nothing"] = {};
+   local nothing = {};
+   setmetatable(nothing,
+                {__tostring = function() return "nothing"; end;});
+   M["nothing"] = nothing;
 
    -- use native bools
    M["true"] = true;
    M["false"] = false;
-   M["print"] = primitive_func(print);
-   M["add"] = function(...)
-      local out = 0;
-      for _, v in ipairs(arg) do
-         out = out + v;
-      end;
-      return out;
-   end;
+   M["print"] = functions.primitive(print);
+   M["add"] = functions.primitive(function(...)
+                                     local out = 0;
+                                     for _, v in ipairs(arg) do
+                                        out = out + v;
+                                     end;
+                                     return out;
+                                  end);
 
 end;
 

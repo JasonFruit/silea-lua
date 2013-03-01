@@ -211,7 +211,7 @@ do
          array = (P("[") * ws * V("expression")^-1 * (ws * V("expression"))^0 * ws * P("]")) / namerFunc("array"),
          attrib = (ident * ws * P(":") * ws * V("expression")) / namerFunc("attrib"),
          container = (P("<") * (ws * V("attrib"))^0 * ws * P(">")) / namerFunc("container"),
-         func = C(P("function")) * ws * params * ws *  V("scope") / makeNamed,
+         func = C(P("function") * ws * params * ws *  V("scope")) / namerFunc("function"),
          return_st = (C(P("return")) * ws * V("expression")) / makeNamed,
          statement = C(V("accessed_expr") +
                        V("call") +
@@ -262,6 +262,11 @@ do
          handle_linenums(ast);
       end;
 
+      setmetatable(ast,
+                   {__tostring = function(t)
+                       return node_to_string(t);
+                   end});
+      
       return ast;
 
    end
