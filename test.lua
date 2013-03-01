@@ -5,10 +5,16 @@ local evaluator = require("evaluator");
 
 local code = [[
 
-let struct function(a b c) {
-    return <a: a b: b c: c>
+let factorial function(n) {
+    if equal(n 0) {
+        return 1
+    } else {
+        return mult(n factorial(add(n -1)))
+    }
 }
-print(struct(3 5 "dog"))
+
+print(factorial(20))
+
 ]];
 
 local ast = parser.parse(code)

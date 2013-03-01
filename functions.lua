@@ -6,7 +6,7 @@ do
       local out = {};
       setmetatable(out,
                    {__call = function(t, ...)
-                       f(unpack(arg));
+                       return f(unpack(arg));
                    end,
                     __tostring = function()
                        return "(primitive function)";
@@ -31,7 +31,7 @@ do
                        end;
                        
                        -- yes, we use exceptions to handle return values
-                       success, retval = pcall(eval, out.ast, env);
+                       local success, retval = pcall(eval, out.ast, env);
                        
                        if success then
                           return nil;

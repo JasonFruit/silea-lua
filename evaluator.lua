@@ -139,7 +139,9 @@ do
       local args = {};
 
       for i, arg_ast in ipairs(ast[2]) do
-         args[i] = eval(arg_ast, env);
+         if arg_ast ~= "()" then
+            args[i] = eval(arg_ast, env);
+         end;
       end;
 
       return f(unpack(args));

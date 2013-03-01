@@ -262,11 +262,6 @@ do
          handle_linenums(ast);
       end;
 
-      setmetatable(ast,
-                   {__tostring = function(t)
-                       return node_to_string(t);
-                   end});
-      
       return ast;
 
    end
